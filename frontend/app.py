@@ -689,3 +689,151 @@ if st.button("📧 Check & Draft Follow-ups"):
         except Exception as e:
             st.error(
                 f"❌ Something went wrong: {str(e)}")
+            
+st.divider()
+
+# ─────────────────────────────────────
+# INTERVIEW PREP AGENT SECTION
+# ─────────────────────────────────────
+st.subheader("🎯 AI Interview Prep Agent")
+st.markdown(
+    "Enter company and role — AI generates "
+    "specific interview questions and tips!")
+
+prep_col1, prep_col2 = st.columns(2)
+
+with prep_col1:
+    prep_company = st.text_input(
+        "Company Name:",
+        placeholder="e.g. Google, Amazon, Microsoft",
+        key="prep_company"
+    )
+
+with prep_col2:
+    prep_role = st.text_input(
+        "Job Role:",
+        placeholder="e.g. ML Engineer, Data Scientist",
+        key="prep_role"
+    )
+
+prep_jd = st.text_area(
+    "Job Description (optional but recommended):",
+    height=150,
+    placeholder="Paste job description for more specific questions...",
+    key="prep_jd"
+)
+
+if st.button("🎯 Generate Interview Questions"):
+    if prep_company and prep_role:
+        with st.spinner(
+            "🎯 Generating interview questions... "
+            "This takes 30-60 seconds..."
+        ):
+            try:
+                from agents.interview_prep_agent import (
+                    run_interview_prep_agent)
+
+                results, error = run_interview_prep_agent(
+                    prep_company,
+                    prep_role,
+                    prep_jd
+                )
+
+                if error:
+                    st.error(f"❌ Error: {error}")
+                else:
+                    st.success(
+                        f"✅ Interview prep ready for "
+                        f"{prep_company} — {prep_role}!")
+
+                    # Create tabs for each section
+                    tab1, tab2, tab3, tab4 = st.tabs([
+                        "💻 Technical",
+                        "🤝 Behavioral",
+                        "🏗️ System Design",
+                        "💡 Company Tips"
+                    ])
+
+                    with tab1:
+                        st.subheader(
+                            "💻 Technical Questions")
+                        st.markdown(
+                            results["technical"])
+                        st.download_button(
+                            label="⬇️ Download Technical Q's",
+                            data=results["technical"],
+                            file_name=f"{prep_company}_technical.txt",
+                            mime="text/plain",
+                            key="tech_download"
+                        )
+
+                    with tab2:
+                        st.subheader(
+                            "🤝 Behavioral Questions")
+                        st.markdown(
+                            results["behavioral"])
+                        st.download_button(
+                            label="⬇️ Download Behavioral Q's",
+                            data=results["behavioral"],
+                            file_name=f"{prep_company}_behavioral.txt",
+                            mime="text/plain",
+                            key="behav_download"
+                        )
+
+                    with tab3:
+                        st.subheader(
+                            "🏗️ System Design Questions")
+                        st.markdown(
+                            results["system_design"])
+                        st.download_button(
+                            label="⬇️ Download System Design Q's",
+                            data=results["system_design"],
+                            file_name=f"{prep_company}_systemdesign.txt",
+                            mime="text/plain",
+                            key="sys_download"
+                        )
+
+                    with tab4:
+                        st.subheader(
+                            "💡 Company Specific Tips")
+                        st.markdown(results["tips"])
+                        st.download_button(
+                            label="⬇️ Download Tips",
+                            data=results["tips"],
+                            file_name=f"{prep_company}_tips.txt",
+                            mime="text/plain",
+                            key="tips_download"
+                        )
+
+                    # Download everything button
+                    st.divider()
+                    full_prep = f"""
+INTERVIEW PREP: {prep_company} - {prep_role}
+{'='*50}
+
+TECHNICAL QUESTIONS:
+{results['technical']}
+
+BEHAVIORAL QUESTIONS:
+{results['behavioral']}
+
+SYSTEM DESIGN QUESTIONS:
+{results['system_design']}
+
+COMPANY TIPS:
+{results['tips']}
+"""
+                    st.download_button(
+                        label="⬇️ Download Complete Prep Guide",
+                        data=full_prep,
+                        file_name=f"{prep_company}_complete_prep.txt",
+                        mime="text/plain",
+                        key="full_download"
+                    )
+
+            except Exception as e:
+                st.error(
+                    f"❌ Something went wrong: {str(e)}")
+    else:
+        st.warning(
+            "⚠️ Please fill Company Name and Job Role!")
