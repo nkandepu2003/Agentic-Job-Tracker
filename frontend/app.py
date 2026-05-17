@@ -273,3 +273,109 @@ if st.button("✨ Tailor My Resume with AI"):
     else:
         st.warning(
             "⚠️ Please paste a job description first!")
+        
+
+st.divider()
+
+# ─────────────────────────────────────
+# COVER LETTER AGENT SECTION
+# ─────────────────────────────────────
+st.subheader("✉️ AI Cover Letter Agent")
+st.markdown(
+    "Enter company name and job description — AI writes your cover letter!")
+
+# Input fields
+cover_company = st.text_input(
+    "Company Name:",
+    placeholder="e.g. Google, Amazon, Microsoft..."
+)
+
+cover_jd = st.text_area(
+    "Paste Job Description Here:",
+    height=200,
+    placeholder="Copy and paste the full job description here...",
+    key="cover_jd"
+)
+
+if st.button("✉️ Write My Cover Letter"):
+    if cover_company and cover_jd:
+        with st.spinner(
+            "✍️ AI is writing your cover letter... This takes 10-30 seconds..."
+        ):
+            try:
+                from agents.cover_letter_agent import run_cover_letter_agent
+
+                resume_path = "resume.pdf"
+                cover_letter, error = run_cover_letter_agent(
+                    resume_path,
+                    cover_jd,
+                    cover_company
+                )
+
+                if error:
+                    st.error(f"❌ Error: {error}")
+                else:
+                    st.success(
+                        "✅ Your cover letter is ready!")
+
+                    # Show formatted preview
+                    st.subheader("👀 Cover Letter Preview")
+                    st.markdown(cover_letter)
+
+                    st.divider()
+
+                    # Download options
+                    col1, col2 = st.columns(2)
+
+                    with col1:
+                        st.download_button(
+                            label="⬇️ Download as TXT",
+                            data=cover_letter,
+                            file_name="cover_letter.txt",
+                            mime="text/plain"
+                        )
+
+                    with col2:
+                        if st.button("📄 Download as Word Doc",
+                                     key="cover_word"):
+                            try:
+                                from docx import Document
+
+                                doc = Document()
+
+                                for line in cover_letter.split('\n'):
+                                    if not line.strip():
+                                        doc.add_paragraph('')
+                                        continue
+                                    p = doc.add_paragraph()
+                                    parts = re.split(
+                                        r'\*\*(.*?)\*\*', line)
+                                    for i, part in enumerate(parts):
+                                        if i % 2 == 0:
+                                            p.add_run(part)
+                                        else:
+                                            run = p.add_run(part)
+                                            run.bold = True
+
+                                doc_bytes = io.BytesIO()
+                                doc.save(doc_bytes)
+                                doc_bytes.seek(0)
+
+                                st.download_button(
+                                    label="⬇️ Click to Save Word File",
+                                    data=doc_bytes.getvalue(),
+                                    file_name="cover_letter.docx",
+                                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                    key="cover_docx"
+                                )
+                                st.success("✅ Word document ready!")
+
+                            except Exception as e:
+                                st.error(
+                                    f"❌ Error creating Word doc: {str(e)}")
+
+            except Exception as e:
+                st.error(f"❌ Something went wrong: {str(e)}")
+    else:
+        st.warning(
+            "⚠️ Please fill in Company Name and Job Description!")
