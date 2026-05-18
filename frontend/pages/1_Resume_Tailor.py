@@ -44,7 +44,13 @@ if st.button("✨ Tailor My Resume with AI",
             try:
                 from agents.tailor_agent import (
                     run_tailor_agent)
-                resume_path = "resume.pdf"
+                resume_path = st.session_state.get(
+                    "resume_path", "resume.pdf")
+                if not resume_path:
+                    st.warning(
+                        "⚠️ Please upload your resume "
+                        "using the sidebar on the left!")
+                    st.stop()
                 tailored_resume, error = run_tailor_agent(
                     resume_path, job_description)
 

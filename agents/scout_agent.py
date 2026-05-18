@@ -14,7 +14,6 @@ import sys
 import json
 from dotenv import load_dotenv
 from serpapi import GoogleSearch
-from langchain_huggingface import HuggingFaceEmbeddings
 import numpy as np
 import fitz
 
@@ -52,24 +51,13 @@ PREFERENCES_FILE = "search_preferences.json"
 _embedding_model = None
 
 def load_embedding_model():
-    """
-    Loads Sentence Transformers model once
-    and caches it in memory.
-
-    First call: downloads 90MB model (slow)
-    Every call after: returns cached (instant)
-
-    Uses global variable instead of
-    Streamlit cache to avoid conflicts
-    between pages.
-    """
     global _embedding_model
     if _embedding_model is None:
-        print("📦 Loading embedding model for first time...")
+        print("Loading embedding model...")
+        from langchain_huggingface import HuggingFaceEmbeddings
         _embedding_model = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-MiniLM-L6-v2"
         )
-        print("✅ Model loaded and cached!")
     return _embedding_model
 
 

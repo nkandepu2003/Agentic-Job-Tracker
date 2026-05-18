@@ -17,12 +17,19 @@ st.set_page_config(
 )
 
 from database.models import get_db, JobApplication, delete_application
-from frontend.theme import apply_dark_theme
+from frontend.theme import apply_dark_theme, handle_resume_upload
 
 # Apply dark theme first
 apply_dark_theme()
 
+# ─────────────────────────────────────
+# RESUME UPLOAD
+# ─────────────────────────────────────
+resume_path = handle_resume_upload()
+if resume_path:
+    st.session_state["resume_path"] = resume_path
 
+st.sidebar.markdown("<br>", unsafe_allow_html=True)
 # ─────────────────────────────────────
 # SIDEBAR
 # ─────────────────────────────────────
