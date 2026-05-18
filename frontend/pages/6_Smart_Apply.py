@@ -1,12 +1,10 @@
 # pages/6_Smart_Apply.py
-# One click smart apply using LangGraph
-# All agents work together automatically!
-
 import streamlit as st
 import sys
 import os
 import io
 import re
+import json
 
 sys.path.append(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))))
@@ -16,6 +14,49 @@ st.set_page_config(
     page_icon="🚀",
     layout="wide"
 )
+
+from frontend.theme import apply_dark_theme
+apply_dark_theme()
+
+# ─────────────────────────────────────
+# RECENT SEARCH FUNCTIONS
+# ─────────────────────────────────────
+
+SMART_APPLY_PREFS = "smart_apply_preferences.json"
+
+
+def save_smart_apply_prefs(company, role):
+    try:
+        if os.path.exists(SMART_APPLY_PREFS):
+            with open(SMART_APPLY_PREFS, "r") as f:
+                prefs = json.load(f)
+        else:
+            prefs = {"companies": [], "roles": []}
+        if company and company not in prefs["companies"]:
+            prefs["companies"].insert(0, company)
+            prefs["companies"] = prefs["companies"][:5]
+        if role and role not in prefs["roles"]:
+            prefs["roles"].insert(0, role)
+            prefs["roles"] = prefs["roles"][:5]
+        with open(SMART_APPLY_PREFS, "w") as f:
+            json.dump(prefs, f)
+    except Exception as e:
+        print(f"Could not save prefs: {str(e)}")
+
+
+def load_smart_apply_prefs():
+    try:
+        if os.path.exists(SMART_APPLY_PREFS):
+            with open(SMART_APPLY_PREFS, "r") as f:
+                return json.load(f)
+        return {"companies": [], "roles": []}
+    except Exception:
+        return {"companies": [], "roles": []}
+
+
+# ─────────────────────────────────────
+# PAGE TITLE
+# ─────────────────────────────────────
 
 st.title("🚀 Smart Apply — Powered by LangGraph")
 st.markdown(
@@ -29,31 +70,81 @@ st.info(
     "Just fill in the details and click apply!")
 
 # ─────────────────────────────────────
-# INPUT SECTION
+# LOAD RECENT SEARCHES
 # ─────────────────────────────────────
+
+sa_prefs = load_smart_apply_prefs()
+sa_companies = sa_prefs.get("companies", [])
+sa_roles = sa_prefs.get("roles", [])
+
+# ─────────────────────────────────────
+# INPUT FIELDS
+# ─────────────────────────────────────
+
+# Recent company selection
+if sa_companies:
+    st.markdown(
+        f'<p style="color:#6b6783; font-size:12px;">💡 Recent: {", ".join(sa_companies[:3])}</p>',
+        unsafe_allow_html=True
+    )
+
 col1, col2 = st.columns(2)
 
 with col1:
-    company_name = st.text_input(
-        "Company Name:",
-        placeholder="e.g. Google"
-    )
+    if sa_companies:
+        company_choice = st.selectbox(
+            "Company Name:",
+            ["Type a new company..."] + sa_companies,
+            key="sa_company_select"
+        )
+        if company_choice == "Type a new company...":
+            company_name = st.text_input(
+                "Enter company name:",
+                placeholder="e.g. Google",
+                key="sa_company_input"
+            )
+        else:
+            company_name = company_choice
+    else:
+        company_name = st.text_input(
+            "Company Name:",
+            placeholder="e.g. Google",
+            key="sa_company_input"
+        )
 
 with col2:
-    job_title = st.text_input(
-        "Job Title:",
-        placeholder="e.g. ML Engineer"
-    )
+    if sa_roles:
+        role_choice = st.selectbox(
+            "Job Title:",
+            ["Type a new role..."] + sa_roles,
+            key="sa_role_select"
+        )
+        if role_choice == "Type a new role...":
+            job_title = st.text_input(
+                "Enter job title:",
+                placeholder="e.g. ML Engineer",
+                key="sa_role_input"
+            )
+        else:
+            job_title = role_choice
+    else:
+        job_title = st.text_input(
+            "Job Title:",
+            placeholder="e.g. ML Engineer",
+            key="sa_role_input"
+        )
 
 job_url = st.text_input(
     "Job URL (optional):",
-    placeholder="https://careers.google.com/..."
+    placeholder="https://careers.google.com/...",
+    key="sa_url_input"
 )
 
 job_description = st.text_area(
     "Paste Full Job Description:",
     height=250,
-    placeholder="Copy and paste the complete job description here..."
+    placeholder="Copy and paste the complete job description here...",
+    key="sa_jd_input"
 )
 
 st.divider()
@@ -61,6 +152,7 @@ st.divider()
 # ─────────────────────────────────────
 # SMART APPLY BUTTON
 # ─────────────────────────────────────
+
 if st.button(
     "🚀 Smart Apply — Run All Agents",
     use_container_width=True,
@@ -68,7 +160,6 @@ if st.button(
 ):
     if company_name and job_title and job_description:
 
-        # Progress tracking
         progress_bar = st.progress(0)
         status_text = st.empty()
 
@@ -81,10 +172,9 @@ if st.button(
                     run_application_graph)
 
                 status_text.text(
-                    "⚙️ Starting agentic workflow...")
+                    "Starting agentic workflow...")
                 progress_bar.progress(10)
 
-                # Run the complete graph
                 final_state, error = run_application_graph(
                     job_description=job_description,
                     company_name=company_name,
@@ -93,8 +183,11 @@ if st.button(
                     resume_path="resume.pdf"
                 )
 
+                save_smart_apply_prefs(
+                    company_name, job_title)
+
                 progress_bar.progress(100)
-                status_text.text("✅ All agents complete!")
+                status_text.text("All agents complete!")
 
                 if error:
                     st.error(f"❌ Error: {error}")
@@ -103,9 +196,6 @@ if st.button(
                         "🎉 Smart Apply Complete! "
                         "Everything is ready!")
 
-                    # ─────────────────────────────
-                    # SHOW RESULTS IN TABS
-                    # ─────────────────────────────
                     tab1, tab2, tab3, tab4 = st.tabs([
                         "🎯 Match Score",
                         "📄 Tailored Resume",
@@ -115,7 +205,6 @@ if st.button(
 
                     with tab1:
                         st.subheader("🎯 Job Match Analysis")
-
                         score = final_state.get(
                             "match_score", 0)
 
@@ -135,21 +224,19 @@ if st.button(
                         )
 
                         kw_col1, kw_col2 = st.columns(2)
-
                         with kw_col1:
                             matching = final_state.get(
                                 "matching_keywords", [])
                             if matching:
                                 st.success(
-                                    "✅ **Keywords you have:**\n" +
+                                    "✅ Keywords you have:\n" +
                                     " • ".join(matching))
-
                         with kw_col2:
                             missing = final_state.get(
                                 "missing_keywords", [])
                             if missing:
                                 st.error(
-                                    "❌ **Missing keywords:**\n" +
+                                    "❌ Missing keywords:\n" +
                                     " • ".join(missing))
                                 st.caption(
                                     "💡 Add these to your "
@@ -163,7 +250,6 @@ if st.button(
                         if tailored:
                             st.markdown(tailored)
                             st.divider()
-
                             col1, col2 = st.columns(2)
                             with col1:
                                 st.download_button(
@@ -211,13 +297,11 @@ if st.button(
                                     st.error(f"Word error: {str(e)}")
                         else:
                             st.warning(
-                                "⚠️ Resume tailoring failed. "
-                                "Check resume.pdf exists.")
+                                "⚠️ Resume tailoring failed.")
 
                     with tab3:
                         st.subheader("✉️ Cover Letter")
                         cover = final_state.get("cover_letter")
-
                         if cover:
                             st.markdown(cover)
                             st.divider()
@@ -234,20 +318,16 @@ if st.button(
 
                     with tab4:
                         st.subheader("📊 Application Status")
-
                         logged = final_state.get(
                             "application_logged", False)
-
                         if logged:
                             st.success(
                                 "✅ Application automatically "
                                 "logged to your tracker!")
                             st.write(
                                 f"**Company:** {company_name}")
-                            st.write(
-                                f"**Role:** {job_title}")
-                            st.write(
-                                f"**Status:** Applied")
+                            st.write(f"**Role:** {job_title}")
+                            st.write("**Status:** Applied")
                             st.write(
                                 f"**Match Score:** "
                                 f"{final_state.get('match_score', 0)}%")

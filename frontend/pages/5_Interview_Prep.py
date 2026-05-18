@@ -12,6 +12,9 @@ st.set_page_config(
     layout="wide"
 )
 
+from frontend.theme import apply_dark_theme
+apply_dark_theme()
+
 st.title("🎯 AI Interview Prep Agent")
 st.markdown(
     "Enter company and role — AI generates "
@@ -38,7 +41,8 @@ job_description = st.text_area(
 )
 
 if st.button("🎯 Generate Interview Questions",
-             use_container_width=True):
+             use_container_width=True,
+             key="generate_btn"):
     if company and job_role:
         with st.spinner(
             "🎯 Generating interview questions... "
@@ -77,8 +81,7 @@ if st.button("🎯 Generate Interview Questions",
                         )
 
                     with tab2:
-                        st.subheader(
-                            "🤝 Behavioral Questions")
+                        st.subheader("🤝 Behavioral Questions")
                         st.markdown(results["behavioral"])
                         st.download_button(
                             label="⬇️ Download",
@@ -89,8 +92,7 @@ if st.button("🎯 Generate Interview Questions",
                         )
 
                     with tab3:
-                        st.subheader(
-                            "🏗️ System Design Questions")
+                        st.subheader("🏗️ System Design Questions")
                         st.markdown(results["system_design"])
                         st.download_button(
                             label="⬇️ Download",
@@ -101,8 +103,7 @@ if st.button("🎯 Generate Interview Questions",
                         )
 
                     with tab4:
-                        st.subheader(
-                            "💡 Company Specific Tips")
+                        st.subheader("💡 Company Specific Tips")
                         st.markdown(results["tips"])
                         st.download_button(
                             label="⬇️ Download",

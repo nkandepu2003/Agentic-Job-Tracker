@@ -30,14 +30,48 @@ load_dotenv()
 SERPAPI_KEY = os.getenv("SERPAPI_KEY")
 
 if not SERPAPI_KEY:
-    raise ValueError(
-        "SerpAPI key not found! "
-        "Check your .env file has: "
-        "SERPAPI_KEY=your_key_here"
-    )
+    try:
+        import streamlit as st
+        SERPAPI_KEY = st.secrets.get(
+            "SERPAPI_KEY",
+            os.getenv("SERPAPI_KEY")
+        )
+    except Exception:
+        pass
 
 HISTORY_FILE = "seen_jobs.json"
 PREFERENCES_FILE = "search_preferences.json"
+
+# ─────────────────────────────────────
+# GLOBAL MODEL CACHE
+# Loads model once, reuses every time
+# Like installing an app once vs
+# downloading it every single time
+# ─────────────────────────────────────
+
+_embedding_model = None
+
+def load_embedding_model():
+    """
+    Loads Sentence Transformers model once
+    and caches it in memory.
+
+    First call: downloads 90MB model (slow)
+    Every call after: returns cached (instant)
+
+    Uses global variable instead of
+    Streamlit cache to avoid conflicts
+    between pages.
+    """
+    global _embedding_model
+    if _embedding_model is None:
+        print("📦 Loading embedding model for first time...")
+        _embedding_model = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2"
+        )
+        print("✅ Model loaded and cached!")
+    return _embedding_model
+
 
 # ─────────────────────────────────────
 # FUNCTION 1: SAVE/LOAD HISTORY
@@ -208,10 +242,7 @@ def extract_keywords(text):
 def get_keyword_analysis(resume_text, job_text):
     """
     Compares keywords in resume vs job description.
-
-    Returns:
-    matching: keywords in BOTH resume and JD
-    missing: keywords in JD but NOT in resume
+    Returns matching and missing keywords.
     """
     resume_keywords = set(extract_keywords(resume_text))
     job_keywords = set(extract_keywords(job_text))
@@ -329,14 +360,17 @@ def score_jobs_against_resume(jobs, resume_text):
     Scores each job against your resume.
     Also finds matching and missing keywords.
     Shows ALL jobs but ranks best matches first.
+
+    Uses cached model for speed.
+    First run: slow (downloads model)
+    Every run after: fast (uses cache)
     """
 
     print("🧠 Scoring jobs against your resume...")
 
     try:
-        embeddings_model = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
-        )
+        # Use cached model instead of loading fresh every time
+        embeddings_model = load_embedding_model()
 
         resume_vector = embeddings_model.embed_query(
             resume_text[:1000]
@@ -382,10 +416,10 @@ def sort_jobs(jobs):
     Sorts jobs by recency first then match score.
 
     Priority order:
-    1. Jobs posted within 24 hours (hours ago)
-    2. Jobs posted within 7 days (days ago)
-    3. Jobs posted within a month (weeks ago)
-    4. Older jobs (months ago)
+    1. Jobs posted within 24 hours
+    2. Jobs posted within 7 days
+    3. Jobs posted within a month
+    4. Older jobs
 
     Within each group sorted by match score.
     Apply to fresh jobs before everyone else!
@@ -394,11 +428,8 @@ def sort_jobs(jobs):
     def get_sort_priority(job):
         posted = job.get("posted", "").lower()
 
-        # Within 24 hours = highest priority
         if "hour" in posted:
             recency = 0
-
-        # Within 7 days
         elif "day" in posted:
             try:
                 days = int(''.join(
@@ -406,8 +437,6 @@ def sort_jobs(jobs):
                 recency = days
             except Exception:
                 recency = 7
-
-        # Within a month
         elif "week" in posted:
             try:
                 weeks = int(''.join(
@@ -415,17 +444,11 @@ def sort_jobs(jobs):
                 recency = weeks * 7
             except Exception:
                 recency = 30
-
-        # Older than a month
         elif "month" in posted:
             recency = 90
-
-        # Unknown = treat as recent
         else:
             recency = 7
 
-        # Lower recency = shown first
-        # Within same recency higher score = shown first
         return (recency, -job["match_score"])
 
     jobs.sort(key=get_sort_priority)
@@ -561,5 +584,5 @@ def run_scout_agent(
 
 if __name__ == "__main__":
     print("Smart Scout Agent Ready!")
-    print("Sorts by recency first, then match score.")
+    print("Sorts by recency first then match score.")
     print("Fresh jobs always appear at top!")

@@ -1,3 +1,5 @@
+import sys
+import os
 # pages/4_Follow_Up.py
 import streamlit as st
 import sys
@@ -11,6 +13,8 @@ st.set_page_config(
     page_icon="📧",
     layout="wide"
 )
+from frontend.theme import apply_dark_theme
+apply_dark_theme()
 
 st.title("📧 AI Follow-up Agent")
 st.markdown(

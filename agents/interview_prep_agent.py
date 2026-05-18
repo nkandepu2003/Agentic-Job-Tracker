@@ -1,11 +1,7 @@
 # interview_prep_agent.py
-# This agent generates interview questions
-# specific to a company and role
-# Helps you prepare before every interview
+# Generates interview questions specific
+# to a company and role
 
-# ─────────────────────────────────────
-# ALL IMPORTS AT THE TOP
-# ─────────────────────────────────────
 import os
 import sys
 from dotenv import load_dotenv
@@ -19,16 +15,22 @@ sys.path.append(os.path.dirname(
 load_dotenv()
 
 # ─────────────────────────────────────
-# SETUP GROQ + LLAMA 3
+# SETUP GROQ
 # ─────────────────────────────────────
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+try:
+    import streamlit as st
+    GROQ_API_KEY = st.secrets.get(
+        "GROQ_API_KEY",
+        os.getenv("GROQ_API_KEY")
+    )
+except Exception:
+    GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 if not GROQ_API_KEY:
     raise ValueError(
         "Groq API key not found! "
-        "Check your .env file has: "
-        "GROQ_API_KEY=gsk_xxx"
+        "Check your .env file."
     )
 
 llm = ChatGroq(
@@ -39,20 +41,15 @@ llm = ChatGroq(
 )
 
 # ─────────────────────────────────────
-# FUNCTION 1: GENERATE TECHNICAL QUESTIONS
+# FUNCTION 1: TECHNICAL QUESTIONS
 # ─────────────────────────────────────
 
-def generate_technical_questions(company, job_role, job_description):
-    """
-    Generates technical interview questions
-    specific to the company and role.
-
-    Like having an insider who knows
-    exactly what that company asks!
-    """
+def generate_technical_questions(
+    company, job_role, job_description):
 
     prompt_template = PromptTemplate(
-        input_variables=["company", "job_role", "job_description"],
+        input_variables=[
+            "company", "job_role", "job_description"],
         template="""
 You are an expert interview coach who knows
 exactly what {company} asks in interviews
@@ -65,12 +62,11 @@ Job Description Context:
 {job_description}
 
 Rules:
-- Questions must be specific to {company} culture
-- Focus on skills mentioned in job description
+- Questions must be specific to {company}
+- Focus on skills in job description
 - Include ML/AI technical concepts
 - Mix easy and hard questions
 - For each question provide a brief hint
-  on how to answer it
 
 Format each question like this:
 Q1: [question]
@@ -90,16 +86,10 @@ Generate 5 technical questions now:
 
 
 # ─────────────────────────────────────
-# FUNCTION 2: GENERATE BEHAVIORAL QUESTIONS
+# FUNCTION 2: BEHAVIORAL QUESTIONS
 # ─────────────────────────────────────
 
 def generate_behavioral_questions(company, job_role):
-    """
-    Generates behavioral interview questions.
-
-    These are "Tell me about a time when..."
-    type questions. Every company asks these!
-    """
 
     prompt_template = PromptTemplate(
         input_variables=["company", "job_role"],
@@ -109,19 +99,16 @@ You are an expert interview coach.
 Generate 5 BEHAVIORAL interview questions
 that {company} typically asks for {job_role}.
 
-These should be STAR method questions:
-Situation, Task, Action, Result
+These should be STAR method questions.
 
 Rules:
 - Make them specific to {company} values
 - Focus on teamwork, leadership, problem solving
-- Include real scenarios an ML engineer faces
-- For each question explain what they are
-  really looking for in the answer
+- For each question explain what they want
 
 Format each question like this:
 Q1: [question]
-They want to know: [what the interviewer is looking for]
+They want to know: [what interviewer is looking for]
 STAR tip: [how to structure your answer]
 
 Generate 5 behavioral questions now:
@@ -137,16 +124,10 @@ Generate 5 behavioral questions now:
 
 
 # ─────────────────────────────────────
-# FUNCTION 3: GENERATE SYSTEM DESIGN QUESTIONS
+# FUNCTION 3: SYSTEM DESIGN QUESTIONS
 # ─────────────────────────────────────
 
 def generate_system_design_questions(company, job_role):
-    """
-    Generates system design questions.
-
-    These test how you think about
-    building large scale AI systems.
-    """
 
     prompt_template = PromptTemplate(
         input_variables=["company", "job_role"],
@@ -161,8 +142,6 @@ Rules:
 - Focus on ML/AI system design
 - Think about scale and production
 - Include real problems {company} faces
-- For each question provide a framework
-  for how to approach the answer
 
 Format each question like this:
 Q1: [question]
@@ -182,16 +161,10 @@ Generate 3 system design questions now:
 
 
 # ─────────────────────────────────────
-# FUNCTION 4: GENERATE COMPANY TIPS
+# FUNCTION 4: COMPANY TIPS
 # ─────────────────────────────────────
 
 def generate_company_tips(company, job_role):
-    """
-    Generates company specific interview tips.
-
-    Like having a friend who works there
-    giving you insider advice!
-    """
 
     prompt_template = PromptTemplate(
         input_variables=["company", "job_role"],
@@ -238,46 +211,37 @@ def run_interview_prep_agent(
     Main function that runs the complete
     interview prep agent.
 
-    Steps:
-    1. Generate technical questions
-    2. Generate behavioral questions
-    3. Generate system design questions
-    4. Generate company specific tips
-    5. Return everything organized
-
-    Use this BEFORE every interview
-    to prepare specifically for that company!
+    Returns dict with:
+    - technical questions
+    - behavioral questions
+    - system design questions
+    - company tips
     """
 
-    print(f"🎯 Starting Interview Prep Agent...")
+    print(f"Starting Interview Prep Agent...")
     print(f"Company: {company} | Role: {job_role}")
 
     results = {}
 
-    # STEP 1: Technical questions
-    print("💻 Generating technical questions...")
+    print("Generating technical questions...")
     results["technical"] = generate_technical_questions(
         company, job_role, job_description)
 
-    # STEP 2: Behavioral questions
-    print("🤝 Generating behavioral questions...")
+    print("Generating behavioral questions...")
     results["behavioral"] = generate_behavioral_questions(
         company, job_role)
 
-    # STEP 3: System design questions
-    print("🏗️ Generating system design questions...")
+    print("Generating system design questions...")
     results["system_design"] = generate_system_design_questions(
         company, job_role)
 
-    # STEP 4: Company tips
-    print("💡 Generating company specific tips...")
+    print("Generating company tips...")
     results["tips"] = generate_company_tips(
         company, job_role)
 
-    print("✅ Interview prep complete!")
+    print("Interview prep complete!")
     return results, None
 
 
 if __name__ == "__main__":
     print("Interview Prep Agent Ready!")
-    print("Generates questions specific to company and role.")

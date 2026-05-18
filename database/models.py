@@ -76,3 +76,21 @@ def get_db():
         db.close()
 
 print("Database is ready!")
+
+def delete_application(app_id):
+    """
+    Deletes a job application from database.
+    Like removing a form from your filing cabinet.
+    """
+    db = SessionLocal()
+    try:
+        app = db.query(JobApplication).filter(
+            JobApplication.id == app_id
+        ).first()
+        if app:
+            db.delete(app)
+            db.commit()
+            return True
+        return False
+    finally:
+        db.close()
