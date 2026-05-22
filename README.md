@@ -65,7 +65,7 @@ Each node receives an ApplicationState TypedDict that carries everything — the
 | Vector store | ChromaDB |
 | Job search | SerpAPI to Google Jobs |
 | Frontend | Streamlit with custom dark theme |
-| Database | SQLite via SQLAlchemy |
+| Database | SQLite (local) · Supabase (cloud) |
 | Language | Python 3.11 |
 
 ---
