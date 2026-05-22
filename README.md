@@ -11,8 +11,6 @@
 
 ---
 
-
----
 I built this while preparing for my job search as a final-semester Masters student. I kept running into the same problem — every application needed a tailored resume, a personalized cover letter, and then you have to remember to follow up, prepare for interviews, and somehow keep track of everything. It felt like the process itself was the problem, not the job hunting.
 
 So I decided to automate it.
