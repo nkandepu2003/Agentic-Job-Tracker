@@ -1,0 +1,61 @@
+# docker-compose.yml
+# Runs BOTH Streamlit and FastAPI together
+# One command starts everything: docker-compose up
+
+version: '3.8'
+
+services:
+
+  # ─────────────────────────────────────
+  # SERVICE 1: Streamlit App
+  # The frontend that users see
+  # ─────────────────────────────────────
+  streamlit:
+    build: .
+    container_name: job-tracker-streamlit
+    ports:
+      - "8501:8501"
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - HUGGINGFACEHUB_API_TOKEN=${HUGGINGFACEHUB_API_TOKEN}
+      - SERPAPI_KEY=${SERPAPI_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
+      - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2}
+      - LANGCHAIN_PROJECT=${LANGCHAIN_PROJECT}
+      - LANGCHAIN_ENDPOINT=${LANGCHAIN_ENDPOINT}
+    volumes:
+      - .:/app
+    command: streamlit run frontend/app.py
+      --server.port=8501
+      --server.address=0.0.0.0
+      --server.headless=true
+    restart: unless-stopped
+
+  # ─────────────────────────────────────
+  # SERVICE 2: FastAPI Backend
+  # The API that powers the agents
+  # ─────────────────────────────────────
+  fastapi:
+    build: .
+    container_name: job-tracker-api
+    ports:
+      - "8000:8000"
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - HUGGINGFACEHUB_API_TOKEN=${HUGGINGFACEHUB_API_TOKEN}
+      - SERPAPI_KEY=${SERPAPI_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
+      - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2}
+      - LANGCHAIN_PROJECT=${LANGCHAIN_PROJECT}
+      - LANGCHAIN_ENDPOINT=${LANGCHAIN_ENDPOINT}
+    volumes:
+      - .:/app
+    command: uvicorn api.main:app
+      --host=0.0.0.0
+      --port=8000
+      --reload
+    restart: unless-stopped
+    depends_on:
+      - streamlit
