@@ -6,7 +6,7 @@
 [![AWS](https://img.shields.io/badge/Hosted%20on-AWS%20EC2-FF9900?style=for-the-badge&logo=amazon-aws)](http://18.221.244.29:8501)
 [![GitHub](https://img.shields.io/badge/GitHub-nkandepu2003-black?style=for-the-badge&logo=github)](https://github.com/nkandepu2003/Agentic-Job-Tracker)
 [![Python](https://img.shields.io/badge/Python-3.11-blue?style=for-the-badge&logo=python)](https://python.org)
-[![Streamlit](https://img.shields.io/badge/Deployed-Streamlit%20Cloud-FF4B4B?style=for-the-badge&logo=streamlit)](https://niharika-jobtrack-ai.streamlit.app)
+[![Streamlit](https://img.shields.io/badge/Deployed-Streamlit%20Cloud-FF4B4B?style=for-the-badge&logo=streamlit)](http://18.221.244.29:8501)
 
 </div>
 
