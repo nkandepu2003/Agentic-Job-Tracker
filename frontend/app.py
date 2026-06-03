@@ -1,23 +1,60 @@
-# app.py - AI Agentic Job Tracker
+# app.py
+# AI Agentic Job Tracker Dashboard
 # Dark Purple AI Research Lab Theme
 
+import os
+import sys
+
+# ─────────────────────────────────────
+# LANGSMITH MONITORING SETUP
+# MUST BE FIRST - before any LangChain imports
+# ─────────────────────────────────────
+from dotenv import load_dotenv
+load_dotenv()
+
+langsmith_key = os.getenv("LANGCHAIN_API_KEY", "")
+if langsmith_key:
+    os.environ["LANGCHAIN_TRACING_V2"] = "true"
+    os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
+    os.environ["LANGCHAIN_PROJECT"] = "agentic-job-tracker"
+    os.environ["LANGCHAIN_API_KEY"] = langsmith_key
+    print("✅ LangSmith tracing enabled for project: agentic-job-tracker")
+else:
+    os.environ["LANGCHAIN_TRACING_V2"] = "false"
+    print("⚠️ LangSmith key not found. Tracing disabled.")
+
+# ─────────────────────────────────────
+# LANGSMITH DEBUG (temporary - remove after confirmed working)
+# ─────────────────────────────────────
+try:
+    import langsmith
+    client = langsmith.Client()
+    projects = list(client.list_projects())
+    print(f"✅ LangSmith connected! Projects found: {[p.name for p in projects]}")
+except Exception as e:
+    print(f"❌ LangSmith connection failed: {str(e)}")
+
+# ─────────────────────────────────────
+# ALL OTHER IMPORTS
+# ─────────────────────────────────────
 import streamlit as st
 import pandas as pd
-import sys
-import os
 from datetime import datetime
 
 sys.path.append(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))))
 
+from database.models import get_db, JobApplication, delete_application
+from frontend.theme import apply_dark_theme, handle_resume_upload
+
+# ─────────────────────────────────────
+# PAGE CONFIG
+# ─────────────────────────────────────
 st.set_page_config(
     page_title="AI Job Tracker",
     page_icon="💼",
     layout="wide"
 )
-
-from database.models import get_db, JobApplication, delete_application
-from frontend.theme import apply_dark_theme, handle_resume_upload
 
 # Apply dark theme first
 apply_dark_theme()
@@ -30,6 +67,7 @@ if resume_path:
     st.session_state["resume_path"] = resume_path
 
 st.sidebar.markdown("<br>", unsafe_allow_html=True)
+
 # ─────────────────────────────────────
 # SIDEBAR
 # ─────────────────────────────────────
@@ -50,6 +88,7 @@ stack_items = [
     ("Sentence Transformers", "BERT"),
     ("LangChain", "RAG"),
     ("SerpAPI", "Job Search"),
+    ("LangSmith", "Monitoring"),
 ]
 
 for name, tag in stack_items:
@@ -115,7 +154,8 @@ st.markdown(
     '<span style="background:#1e1a2e; border:0.5px solid #534AB7; color:#AFA9EC; font-size:11px; padding:3px 10px; border-radius:20px; margin-right:6px;">Llama 3 70B</span>'
     '<span style="background:#1e1a2e; border:0.5px solid #534AB7; color:#AFA9EC; font-size:11px; padding:3px 10px; border-radius:20px; margin-right:6px;">RAG Pipeline</span>'
     '<span style="background:#1e1a2e; border:0.5px solid #534AB7; color:#AFA9EC; font-size:11px; padding:3px 10px; border-radius:20px; margin-right:6px;">ChromaDB</span>'
-    '<span style="background:#1e1a2e; border:0.5px solid #534AB7; color:#AFA9EC; font-size:11px; padding:3px 10px; border-radius:20px;">Groq Inference</span>'
+    '<span style="background:#1e1a2e; border:0.5px solid #534AB7; color:#AFA9EC; font-size:11px; padding:3px 10px; border-radius:20px; margin-right:6px;">Groq Inference</span>'
+    '<span style="background:#1e1a2e; border:0.5px solid #534AB7; color:#AFA9EC; font-size:11px; padding:3px 10px; border-radius:20px;">LangSmith</span>'
     '</div>',
     unsafe_allow_html=True
 )
@@ -143,7 +183,7 @@ st.markdown(
 col1, col2, col3, col4 = st.columns(4)
 
 def stat_card(value, label, color, pct=None):
-    bar = f'<div style="height:3px; background:#2d2b3d; border-radius:2px; margin-top:8px;"><div style="width:{pct or min(value*5,100)}%; height:100%; background:{color}; border-radius:2px;"></div></div>' if True else ""
+    bar = f'<div style="height:3px; background:#2d2b3d; border-radius:2px; margin-top:8px;"><div style="width:{pct or min(value*5,100)}%; height:100%; background:{color}; border-radius:2px;"></div></div>'
     return f'''<div style="background:#13111c; border:0.5px solid #2d2b3d; border-top:2px solid {color}; border-radius:10px; padding:1rem; text-align:center;">
     <div style="font-size:28px; font-weight:500; color:#e2d9f3;">{value}</div>
     <div style="font-size:12px; color:#6b6783; margin-top:4px;">{label}</div>
@@ -164,7 +204,7 @@ with col4:
 st.markdown("<br>", unsafe_allow_html=True)
 
 # ─────────────────────────────────────
-# LANGGRAPH PIPELINE (Fixed - no raw HTML)
+# LANGGRAPH PIPELINE
 # ─────────────────────────────────────
 st.markdown(
     '<p style="color:#AFA9EC; font-size:11px; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">LANGGRAPH PIPELINE — Smart Apply</p>',
@@ -178,40 +218,25 @@ with pipe_col1:
         '<div style="background:#0a1a14; border:0.5px solid #1D9E75; border-radius:10px; padding:12px; text-align:center;"><div style="color:#5DCAA5; font-size:20px;">✓</div><div style="color:#5DCAA5; font-size:12px; font-weight:500; margin-top:4px;">Score Job</div><div style="color:#6b6783; font-size:10px; margin-top:2px;">Sentence Transformers</div></div>',
         unsafe_allow_html=True
     )
-
 with pipe_arr1:
-    st.markdown(
-        '<div style="text-align:center; padding-top:20px; color:#534AB7; font-size:20px;">→</div>',
-        unsafe_allow_html=True
-    )
-
+    st.markdown('<div style="text-align:center; padding-top:20px; color:#534AB7; font-size:20px;">→</div>', unsafe_allow_html=True)
 with pipe_col2:
     st.markdown(
         '<div style="background:#1e1a2e; border:0.5px solid #7F77DD; border-radius:10px; padding:12px; text-align:center;"><div style="color:#AFA9EC; font-size:20px;">⟳</div><div style="color:#AFA9EC; font-size:12px; font-weight:500; margin-top:4px;">Tailor Resume</div><div style="color:#6b6783; font-size:10px; margin-top:2px;">Llama 3 + LangChain</div></div>',
         unsafe_allow_html=True
     )
-
 with pipe_arr2:
-    st.markdown(
-        '<div style="text-align:center; padding-top:20px; color:#534AB7; font-size:20px;">→</div>',
-        unsafe_allow_html=True
-    )
-
+    st.markdown('<div style="text-align:center; padding-top:20px; color:#534AB7; font-size:20px;">→</div>', unsafe_allow_html=True)
 with pipe_col3:
     st.markdown(
         '<div style="background:#13111c; border:0.5px solid #2d2b3d; border-radius:10px; padding:12px; text-align:center;"><div style="color:#6b6783; font-size:20px;">○</div><div style="color:#6b6783; font-size:12px; font-weight:500; margin-top:4px;">Cover Letter</div><div style="color:#6b6783; font-size:10px; margin-top:2px;">Llama 3 + LangChain</div></div>',
         unsafe_allow_html=True
     )
-
 with pipe_arr3:
-    st.markdown(
-        '<div style="text-align:center; padding-top:20px; color:#534AB7; font-size:20px;">→</div>',
-        unsafe_allow_html=True
-    )
-
+    st.markdown('<div style="text-align:center; padding-top:20px; color:#534AB7; font-size:20px;">→</div>', unsafe_allow_html=True)
 with pipe_col4:
     st.markdown(
-        '<div style="background:#13111c; border:0.5px solid #2d2b3d; border-radius:10px; padding:12px; text-align:center;"><div style="color:#6b6783; font-size:20px;">○</div><div style="color:#6b6783; font-size:12px; font-weight:500; margin-top:4px;">Log Application</div><div style="color:#6b6783; font-size:10px; margin-top:2px;">SQLite Database</div></div>',
+        '<div style="background:#13111c; border:0.5px solid #2d2b3d; border-radius:10px; padding:12px; text-align:center;"><div style="color:#6b6783; font-size:20px;">○</div><div style="color:#6b6783; font-size:12px; font-weight:500; margin-top:4px;">Log Application</div><div style="color:#6b6783; font-size:10px; margin-top:2px;">Supabase PostgreSQL</div></div>',
         unsafe_allow_html=True
     )
 
@@ -249,7 +274,7 @@ else:
 st.markdown("<br>", unsafe_allow_html=True)
 
 # ─────────────────────────────────────
-# ALL APPLICATIONS WITH DELETE
+# ALL APPLICATIONS WITH DELETE + UPDATE
 # ─────────────────────────────────────
 st.markdown(
     '<p style="color:#AFA9EC; font-size:11px; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">ALL APPLICATIONS</p>',
