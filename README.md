@@ -2,7 +2,8 @@
 
 # AI Agentic Job Tracker
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Click%20Here-7F77DD?style=for-the-badge)](https://niharika-jobtrack-ai.streamlit.app)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Click%20Here-7F77DD?style=for-the-badge)](http://18.221.244.29:8501)
+[![AWS](https://img.shields.io/badge/Hosted%20on-AWS%20EC2-FF9900?style=for-the-badge&logo=amazon-aws)](http://18.221.244.29:8501)
 [![GitHub](https://img.shields.io/badge/GitHub-nkandepu2003-black?style=for-the-badge&logo=github)](https://github.com/nkandepu2003/Agentic-Job-Tracker)
 [![Python](https://img.shields.io/badge/Python-3.11-blue?style=for-the-badge&logo=python)](https://python.org)
 [![Streamlit](https://img.shields.io/badge/Deployed-Streamlit%20Cloud-FF4B4B?style=for-the-badge&logo=streamlit)](https://niharika-jobtrack-ai.streamlit.app)
@@ -65,7 +66,7 @@ Each node receives an ApplicationState TypedDict that carries everything — the
 | Vector store | ChromaDB |
 | Job search | SerpAPI to Google Jobs |
 | Frontend | Streamlit with custom dark theme |
-| Database | SQLite (local) · Supabase (cloud) |
+| Database | SQLite via SQLAlchemy |
 | Language | Python 3.11 |
 
 ---
