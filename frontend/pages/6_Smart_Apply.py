@@ -1,10 +1,10 @@
-# pages/6_Smart_Apply.py
-import streamlit as st
 import sys
 import os
+import streamlit as st
 import io
 import re
 import json
+import tempfile
 
 sys.path.append(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))))
@@ -15,8 +15,39 @@ st.set_page_config(
     layout="wide"
 )
 
-from frontend.theme import apply_dark_theme
+from frontend.theme import apply_dark_theme, handle_resume_upload
 apply_dark_theme()
+
+# ─────────────────────────────────────
+# RESUME HANDLING
+# Works on both laptop and Railway/cloud
+# ─────────────────────────────────────
+
+def get_resume_path():
+    """
+    Gets resume path from session state.
+    Creates fresh temp file every time.
+    Works on cloud where resume.pdf does not exist.
+    """
+    # Check session state first (uploaded via sidebar)
+    if "resume_bytes" in st.session_state:
+        with tempfile.NamedTemporaryFile(
+            delete=False,
+            suffix=".pdf"
+        ) as tmp:
+            tmp.write(st.session_state["resume_bytes"])
+            return tmp.name
+
+    # Fall back to local file (laptop only)
+    if os.path.exists("resume.pdf"):
+        return "resume.pdf"
+
+    return None
+
+# Handle resume upload in sidebar
+resume_path = handle_resume_upload()
+if resume_path:
+    st.session_state["resume_path"] = resume_path
 
 # ─────────────────────────────────────
 # RECENT SEARCH FUNCTIONS
@@ -81,7 +112,6 @@ sa_roles = sa_prefs.get("roles", [])
 # INPUT FIELDS
 # ─────────────────────────────────────
 
-# Recent company selection
 if sa_companies:
     st.markdown(
         f'<p style="color:#6b6783; font-size:12px;">💡 Recent: {", ".join(sa_companies[:3])}</p>',
@@ -160,6 +190,15 @@ if st.button(
 ):
     if company_name and job_title and job_description:
 
+        # Get fresh resume path every time
+        resume_path = get_resume_path()
+
+        if not resume_path:
+            st.warning(
+                "⚠️ Please upload your resume "
+                "using the sidebar on the left!")
+            st.stop()
+
         progress_bar = st.progress(0)
         status_text = st.empty()
 
@@ -168,11 +207,9 @@ if st.button(
             "This takes 1-2 minutes..."
         ):
             try:
-                from agents.job_application_graph import (
-                    run_application_graph)
+                from agents.job_application_graph import run_application_graph
 
-                status_text.text(
-                    "Starting agentic workflow...")
+                status_text.text("Starting agentic workflow...")
                 progress_bar.progress(10)
 
                 final_state, error = run_application_graph(
@@ -180,12 +217,10 @@ if st.button(
                     company_name=company_name,
                     job_title=job_title,
                     job_url=job_url or "N/A",
-                    resume_path="resume.pdf"
+                    resume_path=resume_path
                 )
 
-                save_smart_apply_prefs(
-                    company_name, job_title)
-
+                save_smart_apply_prefs(company_name, job_title)
                 progress_bar.progress(100)
                 status_text.text("All agents complete!")
 
@@ -205,18 +240,14 @@ if st.button(
 
                     with tab1:
                         st.subheader("🎯 Job Match Analysis")
-                        score = final_state.get(
-                            "match_score", 0)
+                        score = final_state.get("match_score", 0)
 
                         if score >= 70:
-                            st.success(
-                                f"🟢 Excellent Match: {score}%")
+                            st.success(f"🟢 Excellent Match: {score}%")
                         elif score >= 50:
-                            st.warning(
-                                f"🟡 Good Match: {score}%")
+                            st.warning(f"🟡 Good Match: {score}%")
                         else:
-                            st.error(
-                                f"🔴 Low Match: {score}%")
+                            st.error(f"🔴 Low Match: {score}%")
 
                         st.progress(
                             min(score / 100, 1.0),
@@ -225,15 +256,13 @@ if st.button(
 
                         kw_col1, kw_col2 = st.columns(2)
                         with kw_col1:
-                            matching = final_state.get(
-                                "matching_keywords", [])
+                            matching = final_state.get("matching_keywords", [])
                             if matching:
                                 st.success(
                                     "✅ Keywords you have:\n" +
                                     " • ".join(matching))
                         with kw_col2:
-                            missing = final_state.get(
-                                "missing_keywords", [])
+                            missing = final_state.get("missing_keywords", [])
                             if missing:
                                 st.error(
                                     "❌ Missing keywords:\n" +
@@ -244,8 +273,7 @@ if st.button(
 
                     with tab2:
                         st.subheader("📄 Tailored Resume")
-                        tailored = final_state.get(
-                            "tailored_resume")
+                        tailored = final_state.get("tailored_resume")
 
                         if tailored:
                             st.markdown(tailored)
@@ -271,12 +299,10 @@ if st.button(
                                                 and not line.strip().startswith('**')):
                                             p = doc.add_paragraph(
                                                 style='List Bullet')
-                                            line = line.strip().lstrip(
-                                                '*').strip()
+                                            line = line.strip().lstrip('*').strip()
                                         else:
                                             p = doc.add_paragraph()
-                                        parts = re.split(
-                                            r'\*\*(.*?)\*\*', line)
+                                        parts = re.split(r'\*\*(.*?)\*\*', line)
                                         for i, part in enumerate(parts):
                                             if i % 2 == 0:
                                                 p.add_run(part)
@@ -296,8 +322,7 @@ if st.button(
                                 except Exception as e:
                                     st.error(f"Word error: {str(e)}")
                         else:
-                            st.warning(
-                                "⚠️ Resume tailoring failed.")
+                            st.warning("⚠️ Resume tailoring failed.")
 
                     with tab3:
                         st.subheader("✉️ Cover Letter")
@@ -313,37 +338,30 @@ if st.button(
                                 key="cover_dl"
                             )
                         else:
-                            st.warning(
-                                "⚠️ Cover letter generation failed.")
+                            st.warning("⚠️ Cover letter generation failed.")
 
                     with tab4:
                         st.subheader("📊 Application Status")
-                        logged = final_state.get(
-                            "application_logged", False)
+                        logged = final_state.get("application_logged", False)
                         if logged:
                             st.success(
                                 "✅ Application automatically "
                                 "logged to your tracker!")
-                            st.write(
-                                f"**Company:** {company_name}")
+                            st.write(f"**Company:** {company_name}")
                             st.write(f"**Role:** {job_title}")
                             st.write("**Status:** Applied")
                             st.write(
                                 f"**Match Score:** "
                                 f"{final_state.get('match_score', 0)}%")
-                            st.info(
-                                "👉 Go to Dashboard to "
-                                "see your application!")
+                            st.info("👉 Go to Dashboard to see your application!")
                         else:
                             st.warning(
                                 "⚠️ Application logging failed. "
                                 "Add manually from Dashboard.")
 
             except Exception as e:
-                st.error(
-                    f"❌ Something went wrong: {str(e)}")
+                st.error(f"❌ Something went wrong: {str(e)}")
                 progress_bar.progress(0)
-
     else:
         st.warning(
             "⚠️ Please fill Company Name, "

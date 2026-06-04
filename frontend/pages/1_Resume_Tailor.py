@@ -1,11 +1,9 @@
 import sys
 import os
-# pages/1_Resume_Tailor.py
 import streamlit as st
-import sys
-import os
 import re
 import io
+import tempfile
 
 sys.path.append(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))))
@@ -15,18 +13,49 @@ st.set_page_config(
     page_icon="🤖",
     layout="wide"
 )
-from frontend.theme import apply_dark_theme
+
+from frontend.theme import apply_dark_theme, handle_resume_upload
 apply_dark_theme()
+
+# ─────────────────────────────────────
+# RESUME HANDLING
+# Works on both laptop and Railway/cloud
+# ─────────────────────────────────────
+
+def get_resume_path():
+    """
+    Gets resume path from session state.
+    Creates fresh temp file every time.
+    Works on cloud where resume.pdf does not exist.
+    """
+    # Check session state first (uploaded via sidebar)
+    if "resume_bytes" in st.session_state:
+        with tempfile.NamedTemporaryFile(
+            delete=False,
+            suffix=".pdf"
+        ) as tmp:
+            tmp.write(st.session_state["resume_bytes"])
+            return tmp.name
+
+    # Fall back to local file (laptop only)
+    if os.path.exists("resume.pdf"):
+        return "resume.pdf"
+
+    return None
+
+# Handle resume upload in sidebar
+resume_path = handle_resume_upload()
+if resume_path:
+    st.session_state["resume_path"] = resume_path
+
+# ─────────────────────────────────────
+# PAGE CONTENT
+# ─────────────────────────────────────
 
 st.title("🤖 AI Resume Tailor Agent")
 st.markdown(
     "Paste a job description and AI will "
     "tailor your resume instantly!")
-
-st.info(
-    "💡 Your resume (resume.pdf) is stored "
-    "in the project folder. "
-    "AI reads it automatically!")
 
 job_description = st.text_area(
     "Paste Job Description Here:",
@@ -37,28 +66,30 @@ job_description = st.text_area(
 if st.button("✨ Tailor My Resume with AI",
              use_container_width=True):
     if job_description:
+
+        # Get fresh resume path every time
+        resume_path = get_resume_path()
+
+        if not resume_path:
+            st.warning(
+                "⚠️ Please upload your resume "
+                "using the sidebar on the left!")
+            st.stop()
+
         with st.spinner(
             "🤖 AI is tailoring your resume... "
-            "10-30 seconds..."
+            "30-60 seconds..."
         ):
             try:
-                from agents.tailor_agent import (
-                    run_tailor_agent)
-                resume_path = st.session_state.get(
-                    "resume_path", "resume.pdf")
-                if not resume_path:
-                    st.warning(
-                        "⚠️ Please upload your resume "
-                        "using the sidebar on the left!")
-                    st.stop()
+                from agents.tailor_agent import run_tailor_agent
+
                 tailored_resume, error = run_tailor_agent(
                     resume_path, job_description)
 
                 if error:
                     st.error(f"❌ Error: {error}")
                 else:
-                    st.success(
-                        "✅ Your tailored resume is ready!")
+                    st.success("✅ Your tailored resume is ready!")
                     st.subheader("👀 Preview")
                     st.markdown(tailored_resume)
                     st.divider()
