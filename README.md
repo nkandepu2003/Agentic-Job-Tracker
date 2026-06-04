@@ -2,7 +2,7 @@
 
 # AI Agentic Job Tracker
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Click%20Here-7F77DD?style=for-the-badge)](http://18.221.244.29:8501)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Click%20Here-7F77DD?style=for-the-badge)](https://web-production-0f5be.up.railway.app)
 [![AWS](https://img.shields.io/badge/Hosted%20on-AWS%20EC2-FF9900?style=for-the-badge&logo=amazon-aws)](http://18.221.244.29:8501)
 [![GitHub](https://img.shields.io/badge/GitHub-nkandepu2003-black?style=for-the-badge&logo=github)](https://github.com/nkandepu2003/Agentic-Job-Tracker)
 [![Python](https://img.shields.io/badge/Python-3.11-blue?style=for-the-badge&logo=python)](https://python.org)
