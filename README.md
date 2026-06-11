@@ -12,11 +12,11 @@
 
 ---
 
-I built this while preparing for my job search as a final-semester Masters student. I kept running into the same problem — every application needed a tailored resume, a personalized cover letter, and then you have to remember to follow up, prepare for interviews, and somehow keep track of everything. It felt like the process itself was the problem, not the job hunting.
+I built this while preparing for my job search as a final-semester Masters student. I kept running into the same problem-every application needed a tailored resume, a personalized cover letter, and then you have to remember to follow up, prepare for interviews, and somehow keep track of everything. It felt like the process itself was the problem, not the job hunting.
 
 So I decided to automate it.
 
-This is a multi-agent AI platform where six agents handle different parts of the job search. You paste a job description, and the agents do the rest — tailor your resume, write a cover letter, score how well the role matches your background, prep interview questions, and log everything to a tracker. The whole pipeline runs on LangGraph, which connects the agents together so they pass context between each other instead of working in isolation.
+This is a multi-agent AI platform where six agents handle different parts of the job search. You paste a job description, and the agents do the rest-tailor your resume, write a cover letter, score how well the role matches your background, prep interview questions, and log everything to a tracker. The whole pipeline runs on LangGraph, which connects the agents together so they pass context between each other instead of working in isolation.
 
 ---
 
@@ -35,13 +35,13 @@ This is a multi-agent AI platform where six agents handle different parts of the
 
 **Cover Letter Agent** writes a full cover letter personalized to the company and role. I spent a lot of time on the prompt to avoid the usual template-sounding output. It references specific things from both the job description and your background.
 
-**Job Scout** searches Google Jobs across seven different search variations at once — things like "ML Engineer remote", "AI Engineer entry level", "Machine Learning Engineer fresher" — then deduplicates the results and scores each one against your resume using BERT-based semantic embeddings. Jobs are sorted by how recently they were posted first, because applying early genuinely matters. It also remembers what you searched last time so you don't have to retype everything.
+**Job Scout** searches Google Jobs across seven different search variations at once-things like "ML Engineer remote", "AI Engineer entry level", "Machine Learning Engineer fresher"-then deduplicates the results and scores each one against your resume using BERT-based semantic embeddings. Jobs are sorted by how recently they were posted first, because applying early genuinely matters. It also remembers what you searched last time so you don't have to retype everything.
 
 **Follow-up Agent** checks your application tracker for roles you applied to more than seven days ago with no response, then drafts a professional follow-up email for each one. You read it, edit if needed, and send it yourself. Nothing goes out automatically.
 
 **Interview Prep Agent** generates company-specific interview questions across technical, behavioral, and system design categories. Give it a company name and role and it actually tailors the questions to that context rather than giving you a generic list.
 
-**Smart Apply** is the piece I'm most proud of. It uses LangGraph to connect all the agents into a four-node state graph. You paste a job description, click one button, and it runs the scoring, resume tailoring, cover letter writing, and application logging in sequence — each node receiving the full state from the previous one.
+**Smart Apply** is the piece I'm most proud of. It uses LangGraph to connect all the agents into a four-node state graph. You paste a job description, click one button, and it runs the scoring, resume tailoring, cover letter writing, and application logging in sequence-each node receiving the full state from the previous one.
 
 ---
 
@@ -52,7 +52,7 @@ Score Job  ->  Tailor Resume  ->  Cover Letter  ->  Log to Tracker
 (BERT)         (Llama 3)          (Llama 3)          (SQLite)
 ```
 
-Each node receives an ApplicationState TypedDict that carries everything — the job description, resume path, match score, tailored resume text, cover letter — and passes it forward. If one node fails it degrades gracefully rather than crashing the whole pipeline.
+Each node receives an ApplicationState TypedDict that carries everything-the job description, resume path, match score, tailored resume text, cover letter-and passes it forward. If one node fails it degrades gracefully rather than crashing the whole pipeline.
 
 ---
 
@@ -77,10 +77,10 @@ Each node receives an ApplicationState TypedDict that carries everything — the
 
 ## A few things worth knowing
 
-- Jobs are sorted by posting date first, not just match score — applying in the first 24 hours matters more than most people realize
+- Jobs are sorted by posting date first, not just match score-applying in the first 24 hours matters more than most people realize
 - The keyword analysis shows exactly which technical terms are present or missing from your resume compared to the job description, not just a percentage
 - Upload your resume once in the sidebar and it stays loaded across all six pages for the entire session
-- The follow-up agent never sends anything automatically — it drafts, you decide
+- The follow-up agent never sends anything automatically-it drafts, you decide
 
 ---
 
@@ -90,7 +90,7 @@ The match scoring was trickier than expected. Sentence Transformers compare sema
 
 Loading the HuggingFace embedding model on every page load was causing ten-plus second delays. Fixed it with a global cache variable so the model loads once per session and reuses across all agent calls.
 
-The LangGraph state management needed more thought than I expected. The TypedDict has to handle partial state gracefully — if resume tailoring fails for some reason, the cover letter step should still run with what it has.
+The LangGraph state management needed more thought than I expected. The TypedDict has to handle partial state gracefully-if resume tailoring fails for some reason, the cover letter step should still run with what it has.
 
 Resume handling for the deployed version was an interesting problem. Locally it finds resume.pdf automatically. On Streamlit Cloud there is no local file, so I built a session-state based uploader in the sidebar. Upload once, works across all six agent pages for the entire session. Each user gets their own session so different people can use it with their own resumes at the same time without any overlap.
 
