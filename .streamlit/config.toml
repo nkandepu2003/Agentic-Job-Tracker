@@ -6,3 +6,4 @@ textColor = "#e2d9f3"
 
 [server]
 maxUploadSize = 10
+port = 7860
